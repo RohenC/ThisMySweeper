@@ -19,11 +19,17 @@ public class MainActivity extends AppCompatActivity {
     private boolean running = true;
     private static final int COLUMN_COUNT = 8;
     private boolean flag = false;
+    private boolean reroute = false;
+    private String rerouteMsg1;
+    private String rerouteMsg2;
+    private String rerouteMsg3;
 
     // save the TextViews of all cells in an array, so later on,
     // when a TextView is clicked, we know which cell it is
     private ArrayList<TextView> cell_tvs;
+    private ArrayList<Integer> cellNums;
     private Set<Integer> bombSet;
+    private Set<Integer> visited;
 
     private int dpToPixel(int dp) {
         float density = Resources.getSystem().getDisplayMetrics().density;
@@ -44,7 +50,9 @@ public class MainActivity extends AppCompatActivity {
 
         // turns this into a 2d array (of set rowSize 10 and colSize 8)
         cell_tvs = new ArrayList<TextView>();
+        cellNums = new ArrayList<Integer>();
         bombSet = new HashSet<Integer>();
+        visited = new HashSet<Integer>();
 
         // Method (2): add four dynamically created cells
         GridLayout grid = (GridLayout) findViewById(R.id.gridLayout01);
@@ -58,7 +66,6 @@ public class MainActivity extends AppCompatActivity {
                 tv.setTextColor(Color.GREEN);
                 tv.setBackgroundColor(Color.GREEN);
                 tv.setOnClickListener(this::onClickTV);
-                tv.setText("0"); //all start at 0
 
                 GridLayout.LayoutParams lp = new GridLayout.LayoutParams();
                 lp.setMargins(dpToPixel(2), dpToPixel(2), dpToPixel(2), dpToPixel(2));
@@ -69,6 +76,7 @@ public class MainActivity extends AppCompatActivity {
 
                 //add to 2d array here instead
                 cell_tvs.add(tv);
+                cellNums.add(0); //start them all off at 0
             }
         }
 
@@ -82,9 +90,50 @@ public class MainActivity extends AppCompatActivity {
 
         //should now have 4 bombs and now need to convert these into pairs
             //for each pair increment the count of it's 8 neighbors (all start at 0?)
+        //need to increment the vals of each of the text in there
+        for (Integer i : bombSet)
+        {
+            //increment neighbors
+            boolean topValid = (i > 7);
+            boolean bottomValid = (i < 72);
+            boolean leftValid = (i % 8 != 0);
+            boolean rightValid = (i % 8 != 7);
 
-        //imma start by just displaying them if they are clicked upon
+            //top
+            if (topValid) {
+                //all valid for top
+                updateGridVal(i-8);
 
+                //check top left
+                if (leftValid) {
+                    updateGridVal(i-9);
+                }
+                // and top right
+                if (rightValid) {
+                    updateGridVal(i-7);
+                }
+            }
+            //bottom
+            if (bottomValid) {
+                updateGridVal(i+8);
+
+                //check bottom right
+                if (rightValid) {
+                    updateGridVal(i+9);
+                }
+                //and bottom left
+                if (leftValid) {
+                    updateGridVal(i+7);
+                }
+            }
+            //right + left
+            if (rightValid) {
+                updateGridVal(i+1);
+            }
+            if (leftValid) {
+                updateGridVal(i-1);
+            }
+        }
     }
 
     private int findIndexOfCellTextView(TextView tv) {
@@ -101,17 +150,12 @@ public class MainActivity extends AppCompatActivity {
 //        int i = n/COLUMN_COUNT;
 //        int j = n%COLUMN_COUNT;
 //        tv.setText(String.valueOf(n));
-        if (bombSet.contains(n)) {
-            //print out all the bombs and end the game
-            for (Integer i : bombSet)
-            {
-                //make all text to bombs
-                cell_tvs.get(i).setText(getResources().getString(R.string.mine));
-            }
-            //now reroute to end page
-        }
 
-        if (tv.getCurrentTextColor() == Color.GREEN) {
+        if (reroute) {
+            //reroute to next page with appropriate rerouteMsg
+            //also pass in the time
+        }
+        else if (tv.getCurrentTextColor() == Color.GREEN) {
             if (flag) {
                 //make the text a flag, keep background green
                 if (tv.getText().equals(getResources().getString(R.string.flag))) {
@@ -133,16 +177,129 @@ public class MainActivity extends AppCompatActivity {
                 if (!tv.getText().equals(getResources().getString(R.string.flag))) {
                     //if the flag is not there do stuff
 
-                    //you pick the square so make it gray and reveal #
-                    //here you would also do the BFS expansion
-                    tv.setText(String.valueOf(n));
-                    tv.setTextColor(Color.GRAY);
-                    tv.setBackgroundColor(Color.LTGRAY);
+                    //check if there is a bomb there first
+                    if (bombSet.contains(n)) {
+                        //print out all the bombs and end the game
+                        for (Integer i : bombSet)
+                        {
+                            //make all text to bombs
+                            cell_tvs.get(i).setText(getResources().getString(R.string.mine));
+                        }
+                        //now reroute to end page if the user clicks another square (so make book variable)
+                        running = false;
+                        reroute = true;
+                        rerouteMsg1 = "You used _ seconds.";
+                        rerouteMsg2 = "You Lost.";
+                        rerouteMsg3 = "Nice try.";
+                    }
+                    else {
+                        //you pick the square so make it gray and reveal #
+                        //here you would also do the BFS expansion
+                        BFS(n);
+                        if (visited.size() == 76) {
+                            running = false; //stop the timer
+                            reroute = true;
+                            rerouteMsg1 = "You used _ seconds.";
+                            rerouteMsg2 = "You Won.";
+                            rerouteMsg3 = "Good Job!";
+                        }
+                    }
                 }
                 //otherwise do nothing
             }
         }
         //don't do anything if the grid is already gray
+    }
+
+    public void BFS(int start)
+    {
+        //do bfs
+            //clear out the text of the num if 0, reveal if > 0
+            //add all of its neighbors to q (only in case of 0)
+            //continue till q is empty
+        //ALSO NEED A VISITED ARRAY/SET
+
+        Queue<Integer> q = new LinkedList<>();
+        q.add(start);
+        visited.add(start);
+
+        while(!q.isEmpty())
+        {
+            int i = q.poll();
+            TextView square = cell_tvs.get(i);
+            int gridVal = cellNums.get(i);
+            if (gridVal > 0) {
+                //reveal and stop
+                //but check if there was a flag there first
+                if (square.getText().equals(getResources().getString(R.string.flag))) {
+                    updateFlagCount(1); //add to flagcount
+                }
+                square.setText(String.valueOf(gridVal));
+                square.setTextColor(Color.GRAY);
+                square.setBackgroundColor(Color.LTGRAY);
+            }
+            else {
+                //erase text including flags
+                if (square.getText().equals(getResources().getString(R.string.flag))) {
+                    updateFlagCount(1); //add to flagcount
+                }
+                square.setText("");
+                square.setBackgroundColor(Color.LTGRAY);
+
+                //add all (valid) neighbors to q
+                boolean topValid = (i > 7);
+                boolean bottomValid = (i < 72);
+                boolean leftValid = (i % 8 != 0);
+                boolean rightValid = (i % 8 != 7);
+
+                //top
+                if (topValid) {
+                    //all valid for top
+                    if (!visited.contains(i-8)) {
+                        q.add(i-8);
+                        visited.add(i-8);
+                    }
+
+                    //check top left
+                    if (leftValid && !visited.contains(i-9)) {
+                        q.add(i-9);
+                        visited.add(i-9);
+                    }
+                    // and top right
+                    if (rightValid && !visited.contains(i-7)) {
+                        q.add(i-7);
+                        visited.add(i-7);
+                    }
+                }
+                //bottom
+                if (bottomValid) {
+                    if (!visited.contains(i+8)) {
+                        q.add(i+8);
+                        visited.add(i+8);
+                    }
+
+                    //check bottom right
+                    if (rightValid && !visited.contains(i+9)) {
+                        q.add(i+9);
+                        visited.add(i+9);
+                    }
+                    //and bottom left
+                    if (leftValid && !visited.contains(i+7)) {
+                        q.add(i+7);
+                        visited.add(i+7);
+                    }
+                }
+                //right + left
+                if (rightValid && !visited.contains(i+1)) {
+                    q.add(i+1);
+                    visited.add(i+1);
+                }
+                if (leftValid && !visited.contains(i-1)) {
+                    q.add(i-1);
+                    visited.add(i-1);
+                }
+            }
+        }
     }
 
     public void updateFlagCount(int offset)
@@ -151,6 +308,13 @@ public class MainActivity extends AppCompatActivity {
         int flagNum = Integer.parseInt(flagView.getText().toString());
         flagNum += offset;
         flagView.setText(String.valueOf(flagNum));
+    }
+
+    public void updateGridVal(int index)
+    {
+        int gridVal = cellNums.get(index);
+        gridVal++;
+        cellNums.set(index, gridVal);
     }
 
     //create an onClick function
