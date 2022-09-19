@@ -4,6 +4,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.gridlayout.widget.GridLayout;
 
 import android.content.res.Resources;
+import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.view.View;
@@ -154,6 +155,7 @@ public class MainActivity extends AppCompatActivity {
         if (reroute) {
             //reroute to next page with appropriate rerouteMsg
             //also pass in the time
+            sendNext();
         }
         else if (tv.getCurrentTextColor() == Color.GREEN) {
             if (flag) {
@@ -199,7 +201,7 @@ public class MainActivity extends AppCompatActivity {
                         if (visited.size() == 76) {
                             running = false; //stop the timer
                             reroute = true;
-                            rerouteMsg1 = "You used _ seconds.";
+                            rerouteMsg1 = "You used " + String.valueOf(clock) + " seconds.";
                             rerouteMsg2 = "You Won.";
                             rerouteMsg3 = "Good Job!";
                         }
@@ -209,6 +211,16 @@ public class MainActivity extends AppCompatActivity {
             }
         }
         //don't do anything if the grid is already gray
+    }
+
+    public void sendNext()
+    {
+        Intent intent = new Intent(this, SecondPage.class);
+        intent.putExtra("timeMsg", rerouteMsg1);
+        intent.putExtra("outcomeMsg", rerouteMsg2);
+        intent.putExtra("encMsg", rerouteMsg3);
+
+        startActivity(intent);
     }
 
     public void BFS(int start)
