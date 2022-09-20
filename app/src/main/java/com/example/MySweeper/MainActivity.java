@@ -75,7 +75,6 @@ public class MainActivity extends AppCompatActivity {
 
                 grid.addView(tv, lp);
 
-                //add to 2d array here instead
                 cell_tvs.add(tv);
                 cellNums.add(0); //start them all off at 0
             }
@@ -190,7 +189,7 @@ public class MainActivity extends AppCompatActivity {
                         //now reroute to end page if the user clicks another square (so make book variable)
                         running = false;
                         reroute = true;
-                        rerouteMsg1 = "You used _ seconds.";
+                        rerouteMsg1 = "You used " + String.valueOf(clock) + " seconds.";
                         rerouteMsg2 = "You Lost.";
                         rerouteMsg3 = "Nice try.";
                     }
@@ -201,6 +200,11 @@ public class MainActivity extends AppCompatActivity {
                         if (visited.size() == 76) {
                             running = false; //stop the timer
                             reroute = true;
+                            for (Integer i : bombSet)
+                            {
+                                //make all text to bombs
+                                cell_tvs.get(i).setText(getResources().getString(R.string.mine));
+                            }
                             rerouteMsg1 = "You used " + String.valueOf(clock) + " seconds.";
                             rerouteMsg2 = "You Won.";
                             rerouteMsg3 = "Good Job!";
